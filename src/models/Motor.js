@@ -46,6 +46,7 @@ const motorSchema = new mongoose.Schema(
     // PDF do Motor (armazenado no Google Drive)
     pdfMotorUrl: { type: String }, // URL do PDF do motor
     pdfMotorId: { type: String }, // ID do arquivo no Google Drive (para facilitar exclusão)
+    pdfMotorName: { type: String }, // Nome original do arquivo PDF (para exibição no app)
 
     // Esquema de Ligação (Canvas)
     temEsquema: { type: Boolean, default: false },

@@ -714,6 +714,7 @@ export const uploadMotorPdf = async (req, res) => {
     // Atualizar motor com URL e ID do PDF
     motor.pdfMotorUrl = url;
     motor.pdfMotorId = fileId;
+    motor.pdfMotorName = fileName;
     await motor.save();
 
     console.log(`✅ PDF do motor ${id} salvo no Google Drive`);
@@ -724,6 +725,7 @@ export const uploadMotorPdf = async (req, res) => {
       data: {
         pdfMotorUrl: url,
         pdfMotorId: fileId,
+        pdfMotorName: fileName,
       },
     });
   } catch (error) {
@@ -791,6 +793,7 @@ export const deleteMotorPdf = async (req, res) => {
     // Remover do motor
     motor.pdfMotorUrl = undefined;
     motor.pdfMotorId = undefined;
+    motor.pdfMotorName = undefined;
     await motor.save();
 
     console.log(`✅ PDF removido do motor ${id}`);
