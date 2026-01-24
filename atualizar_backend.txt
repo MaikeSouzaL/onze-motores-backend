@@ -21,6 +21,17 @@ curl -sS -i http://127.0.0.1:4882/api/health
 curl -sS -i http://127.0.0.1:4882/api/config
 curl -sS -I https://api.onzemotores.com.br/api/health
 
+# 5) Se der 413 Request Entity Too Large ao imprimir/gerar PDF
+# (o app envia logo/fotos em base64 e o Nginx pode bloquear por tamanho)
+# Edite o server HTTPS do domínio e aumente o limite:
+#   sudo nano /etc/nginx/sites-available/api.onzemotores.com.br  (ou conf.d/...)
+# Dentro do server { listen 443 ... } adicione:
+#   client_max_body_size 30m;
+#   client_body_buffer_size 1m;
+# Depois valide e recarregue:
+#   sudo nginx -t
+#   sudo systemctl reload nginx
+
 ssh.exe -L 27018:127.0.0.1:27017 root@76.13.161.93
 ssh -L 27018:127.0.0.1:27017 root@76.13.161.93
 ssh -L 27018:127.0.0.1:27017 root@76.13.161.93
