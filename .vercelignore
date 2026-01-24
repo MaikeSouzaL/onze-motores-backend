@@ -1,0 +1,31 @@
+# Ignorar dependências (Vercel instala automaticamente)
+node_modules
+
+# Ignorar arquivos de ambiente local
+.env
+.env.local
+.env.*.local
+
+# Ignorar arquivos de documentação (não necessários no deploy)
+*.md
+!README.md
+
+# Ignorar arquivos de config local
+onzemotoresapp.json
+
+# Ignorar arquivos de logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignorar arquivos do sistema
+.DS_Store
+Thumbs.db
+
+# Ignorar arquivos do editor
+.vscode
+.idea
+*.swp
+*.swo
+*.swn
+

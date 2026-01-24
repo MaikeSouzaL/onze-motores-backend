@@ -1,0 +1,58 @@
+═══════════════════════════════════════════════════════════════════
+  🚀 API ONZE MOTORES - COMANDOS ESSENCIAIS
+═══════════════════════════════════════════════════════════════════
+
+✅ SIM! REINICIA AUTOMATICAMENTE APÓS QUEDA DE ENERGIA/REINÍCIO
+   A API foi configurada para iniciar automaticamente com o Windows
+
+═══════════════════════════════════════════════════════════════════
+
+📋 VER SE ESTÁ RODANDO:
+   pm2 status
+
+   Status possíveis:
+   • online  ✅ = Funcionando
+   • stopped ⏹️ = Parado
+   • errored ❌ = Com erro
+
+═══════════════════════════════════════════════════════════════════
+
+▶️ INICIAR:
+   pm2 start onzemotores-api
+
+⏹️ PARAR:
+   pm2 stop onzemotores-api
+
+🔄 REINICIAR:
+   pm2 restart onzemotores-api
+
+═══════════════════════════════════════════════════════════════════
+
+📊 VER LOGS:
+   pm2 logs onzemotores-api
+
+   (Ctrl+C para sair)
+
+═══════════════════════════════════════════════════════════════════
+
+🌐 TESTAR NO NAVEGADOR:
+   http://localhost:4882
+   http://localhost:4882/api/health
+
+═══════════════════════════════════════════════════════════════════
+
+⚙️ MENU INTERATIVO:
+   cd c:\Api_OnzeMotores\onze-motores-orcamento_2.0\backend
+   .\gerenciar-api.ps1
+
+═══════════════════════════════════════════════════════════════════
+
+� CONFIGURAR HTTPS (para Stripe webhook):
+   Ver CONFIGURAR-HTTPS.md
+   Executar: .\instalar-https.ps1
+
+═══════════════════════════════════════════════════════════════════
+
+�📖 MAIS COMANDOS: Veja COMANDOS.md
+
+═══════════════════════════════════════════════════════════════════
