@@ -286,7 +286,16 @@ export const mergePDFs = async (req, res) => {
  */
 export const generateMotorPDF = async (req, res) => {
   try {
-    const { motor, empresa, logoBase64, fotosBase64 = [], fotoPlacaBase64, esquemaDados, pdfDriveUrl, pdfConfig } = req.body;
+    const {
+      motor,
+      empresa,
+      logoBase64,
+      fotosBase64 = [],
+      fotoPlacaBase64,
+      esquemaDados,
+      pdfDriveUrl,
+      pdfConfig,
+    } = req.body;
 
     if (!motor || !empresa) {
       return res.status(400).json({
@@ -305,6 +314,46 @@ export const generateMotorPDF = async (req, res) => {
     
     console.log('⚙️ Configurações de logo:', config);
 
+    // ------------------------------------------------------------
+    // Compatibilidade/robustez: se o app NÃO enviar base64 (para evitar 413 no proxy),
+    // o backend baixa as imagens a partir das URLs em `motor`/`empresa`.
+    // ------------------------------------------------------------
+    const downloadImageToBase64 = async (url) => {
+      if (!url || typeof url !== 'string') return null;
+      try {
+        const response = await axios.get(url, {
+          responseType: 'arraybuffer',
+          timeout: 30000,
+          maxContentLength: 15 * 1024 * 1024,
+          maxBodyLength: 15 * 1024 * 1024,
+          validateStatus: (s) => s >= 200 && s < 300,
+        });
+        return Buffer.from(response.data).toString('base64');
+      } catch (err) {
+        console.warn('⚠️ Falha ao baixar imagem para PDF:', {
+          url: String(url).slice(0, 120),
+          message: err.message,
+        });
+        return null;
+      }
+    };
+
+    const finalLogoBase64 =
+      logoBase64 || (empresa?.logo ? await downloadImageToBase64(empresa.logo) : null);
+
+    const finalFotoPlacaBase64 =
+      fotoPlacaBase64 || (motor?.fotoPlacaUrl ? await downloadImageToBase64(motor.fotoPlacaUrl) : null);
+
+    let finalFotosBase64 = Array.isArray(fotosBase64) ? fotosBase64.filter(Boolean) : [];
+    if (finalFotosBase64.length === 0 && Array.isArray(motor?.fotosMotorUrls) && motor.fotosMotorUrls.length > 0) {
+      // Baixar sequencialmente para reduzir pico de memória
+      finalFotosBase64 = [];
+      for (const fotoUrl of motor.fotosMotorUrls) {
+        const b64 = await downloadImageToBase64(fotoUrl);
+        if (b64) finalFotosBase64.push(b64);
+      }
+    }
+
     // Renderizar esquema como SVG se houver dados
     let esquemaImagem = null;
     if (esquemaDados) {
@@ -314,7 +363,15 @@ export const generateMotorPDF = async (req, res) => {
     }
 
     // Gerar HTML do motor (passando as imagens processadas e configurações)
-    const html = getMotorHTML(motor, empresa, logoBase64, fotosBase64, esquemaImagem, fotoPlacaBase64, config);
+    const html = getMotorHTML(
+      motor,
+      empresa,
+      finalLogoBase64,
+      finalFotosBase64,
+      esquemaImagem,
+      finalFotoPlacaBase64,
+      config
+    );
 
     // Configurações para geração do PDF
     const options = {
