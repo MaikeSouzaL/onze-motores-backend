@@ -20,3 +20,8 @@ pm2 save
 curl -sS -i http://127.0.0.1:4882/api/health
 curl -sS -i http://127.0.0.1:4882/api/config
 curl -sS -I https://api.onzemotores.com.br/api/health
+
+ssh.exe -L 27018:127.0.0.1:27017 root@76.13.161.93
+ssh -L 27018:127.0.0.1:27017 root@76.13.161.93
+ssh -L 27018:127.0.0.1:27017 root@76.13.161.93
+
