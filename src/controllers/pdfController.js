@@ -318,7 +318,7 @@ export const generateMotorPDF = async (req, res) => {
     // Compatibilidade/robustez: se o app NÃO enviar base64 (para evitar 413 no proxy),
     // o backend baixa as imagens a partir das URLs em `motor`/`empresa`.
     // ------------------------------------------------------------
-    const downloadImageToBase64 = async (url) => {
+    const downloadImageToDataUri = async (url) => {
       if (!url || typeof url !== 'string') return null;
       try {
         const response = await axios.get(url, {
@@ -327,8 +327,19 @@ export const generateMotorPDF = async (req, res) => {
           maxContentLength: 15 * 1024 * 1024,
           maxBodyLength: 15 * 1024 * 1024,
           validateStatus: (s) => s >= 200 && s < 300,
+          headers: {
+            // Alguns hosts (ex.: Google/Drive) podem bloquear requisições sem User-Agent
+            'User-Agent': 'Mozilla/5.0 (OnzeMotoresPDF/1.0)',
+          },
         });
-        return Buffer.from(response.data).toString('base64');
+
+        const contentTypeHeader =
+          (response.headers && (response.headers['content-type'] || response.headers['Content-Type'])) ||
+          'image/jpeg';
+        const contentType = String(contentTypeHeader).split(';')[0] || 'image/jpeg';
+
+        const base64 = Buffer.from(response.data).toString('base64');
+        return `data:${contentType};base64,${base64}`;
       } catch (err) {
         console.warn('⚠️ Falha ao baixar imagem para PDF:', {
           url: String(url).slice(0, 120),
@@ -339,18 +350,18 @@ export const generateMotorPDF = async (req, res) => {
     };
 
     const finalLogoBase64 =
-      logoBase64 || (empresa?.logo ? await downloadImageToBase64(empresa.logo) : null);
+      logoBase64 || (empresa?.logo ? await downloadImageToDataUri(empresa.logo) : null);
 
     const finalFotoPlacaBase64 =
-      fotoPlacaBase64 || (motor?.fotoPlacaUrl ? await downloadImageToBase64(motor.fotoPlacaUrl) : null);
+      fotoPlacaBase64 || (motor?.fotoPlacaUrl ? await downloadImageToDataUri(motor.fotoPlacaUrl) : null);
 
     let finalFotosBase64 = Array.isArray(fotosBase64) ? fotosBase64.filter(Boolean) : [];
     if (finalFotosBase64.length === 0 && Array.isArray(motor?.fotosMotorUrls) && motor.fotosMotorUrls.length > 0) {
       // Baixar sequencialmente para reduzir pico de memória
       finalFotosBase64 = [];
       for (const fotoUrl of motor.fotosMotorUrls) {
-        const b64 = await downloadImageToBase64(fotoUrl);
-        if (b64) finalFotosBase64.push(b64);
+        const dataUri = await downloadImageToDataUri(fotoUrl);
+        if (dataUri) finalFotosBase64.push(dataUri);
       }
     }
 
