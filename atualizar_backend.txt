@@ -2,21 +2,20 @@ ssh root@76.13.161.93
 senha 
 cd /var/www/backend
 
-# 0) Deixa o repo limpo (evita travar o git pull)
 git restore package-lock.json
 git status --porcelain
 
-# 1) Atualiza o código
+
 git pull origin main
 
-# 2) Atualiza dependências (produção)
+
 npm install --omit=dev
 
-# 3) Reinicia a API pegando env (seguro mesmo sem mudar .env)
+
 pm2 restart ecosystem.config.json --only onze-motores-api --update-env
 pm2 save
 
-# 4) Valida (domínio e local)
+
 curl -sS -i http://127.0.0.1:4882/api/health
 curl -sS -i http://127.0.0.1:4882/api/config
 curl -sS -I https://api.onzemotores.com.br/api/health
