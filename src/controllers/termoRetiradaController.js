@@ -266,6 +266,63 @@ export const updateTermoStatus = async (req, res) => {
 };
 
 /**
+ * @desc    Atualizar campos básicos do termo (ex: data de retirada)
+ * @route   PATCH /api/termos/:id?uid=...
+ */
+export const updateTermoData = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { uid } = req.query;
+    const { dataRetirada } = req.body || {};
+
+    if (!uid) {
+      return res
+        .status(400)
+        .json({ success: false, message: "UID obrigatório" });
+    }
+
+    if (!dataRetirada) {
+      return res.status(400).json({
+        success: false,
+        message: "Nova data de retirada é obrigatória",
+      });
+    }
+
+    const termo = await TermoRetirada.findById(id);
+    if (!termo) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Termo não encontrado" });
+    }
+
+    if (termo.uid !== uid) {
+      console.warn("[TERMO] Tentativa de editar termo de outro usuário", {
+        termoUid: termo.uid,
+        requestUid: uid,
+      });
+      return res
+        .status(403)
+        .json({ success: false, message: "Permissão negada." });
+    }
+
+    const nextDate = new Date(dataRetirada);
+    if (Number.isNaN(nextDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Data de retirada inválida",
+      });
+    }
+
+    termo.dataRetirada = nextDate;
+    await termo.save();
+
+    return res.status(200).json({ success: true, data: termo });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
  * @desc    Contar termos pendentes e vencidos (para badge)
  * @route   GET /api/termos/counts?uid=...
  */
