@@ -273,19 +273,21 @@ export const updateTermoData = async (req, res) => {
   try {
     const { id } = req.params;
     const { uid } = req.query;
-    const { dataRetirada } = req.body || {};
+    const {
+      dataRetirada,
+      dataEntrada,
+      nomeCliente,
+      telefoneCliente,
+      nomeMotor,
+      servicoExecutado,
+      defeitoEncontrado,
+      observacoes,
+    } = req.body || {};
 
     if (!uid) {
       return res
         .status(400)
         .json({ success: false, message: "UID obrigatório" });
-    }
-
-    if (!dataRetirada) {
-      return res.status(400).json({
-        success: false,
-        message: "Nova data de retirada é obrigatória",
-      });
     }
 
     const termo = await TermoRetirada.findById(id);
@@ -305,15 +307,80 @@ export const updateTermoData = async (req, res) => {
         .json({ success: false, message: "Permissão negada." });
     }
 
-    const nextDate = new Date(dataRetirada);
-    if (Number.isNaN(nextDate.getTime())) {
+    const updates = {};
+
+    const applyRequiredString = (field, value, label) => {
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) {
+          throw new Error(`${label} é obrigatório`);
+        }
+        updates[field] = trimmed;
+      }
+    };
+
+    try {
+      applyRequiredString("nomeCliente", nomeCliente, "Nome do cliente");
+      applyRequiredString(
+        "telefoneCliente",
+        telefoneCliente,
+        "Telefone do cliente",
+      );
+      applyRequiredString("nomeMotor", nomeMotor, "Nome do equipamento");
+      applyRequiredString(
+        "defeitoEncontrado",
+        defeitoEncontrado,
+        "Defeito encontrado",
+      );
+    } catch (validationError) {
       return res.status(400).json({
         success: false,
-        message: "Data de retirada inválida",
+        message: validationError.message,
       });
     }
 
-    termo.dataRetirada = nextDate;
+    if (typeof servicoExecutado === "string") {
+      updates.servicoExecutado = servicoExecutado;
+    }
+
+    if (typeof observacoes === "string") {
+      updates.observacoes = observacoes;
+    }
+
+    const parseDateField = (value, label) => {
+      if (value) {
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          throw new Error(`${label} inválida`);
+        }
+        return parsed;
+      }
+      return undefined;
+    };
+
+    try {
+      const nextRetirada = parseDateField(
+        dataRetirada,
+        "Data de retirada",
+      );
+      const nextEntrada = parseDateField(dataEntrada, "Data de entrada");
+      if (nextRetirada) updates.dataRetirada = nextRetirada;
+      if (nextEntrada) updates.dataEntrada = nextEntrada;
+    } catch (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError.message,
+      });
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Nenhum dado válido para atualizar",
+      });
+    }
+
+    Object.assign(termo, updates);
     await termo.save();
 
     return res.status(200).json({ success: true, data: termo });
