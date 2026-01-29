@@ -392,6 +392,57 @@ export const updateTermoData = async (req, res) => {
     Object.assign(termo, updates);
     await termo.save();
 
+    // Se fotos foram adicionadas e não há thumbnail ainda, gerar thumbnail em background
+    if (updates.fotos && updates.fotos.length > 0 && !termo.thumbUrl && !termo.thumbDriveFileId) {
+      setImmediate(async () => {
+        try {
+          const firstPhoto = updates.fotos[0];
+          
+          if (typeof firstPhoto === "string" && firstPhoto.startsWith("data:image")) {
+            console.log("[TERMO] Processando thumbnail para termo editado...", {
+              id: termo._id,
+              uid: termo.uid,
+              thumbSize: Math.round(firstPhoto.length / 1024) + "KB",
+            });
+            
+            const match = firstPhoto.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/);
+            if (match && match[2]) {
+              const mimeType = match[1] || "image/jpeg";
+              const base64Data = match[2];
+              const safeClient = String(termo.nomeCliente || "cliente")
+                .replace(/[^a-zA-Z0-9]/g, "_")
+                .slice(0, 40);
+              const timestamp = Date.now();
+              const fileName = `thumb_termo_${safeClient}_${timestamp}.jpg`;
+
+              const uploaded = await uploadImageBase64AsPublicFile({
+                base64Data,
+                fileName,
+                mimeType,
+              });
+
+              await TermoRetirada.updateOne(
+                { _id: termo._id },
+                {
+                  $set: {
+                    thumbUrl: uploaded.url,
+                    thumbDriveFileId: uploaded.fileId,
+                  },
+                },
+              );
+
+              console.log("[TERMO] ✅ Thumbnail gerada e salva com sucesso", {
+                id: termo._id,
+                url: uploaded.url,
+              });
+            }
+          }
+        } catch (e) {
+          console.warn("[TERMO] ⚠️ Erro ao gerar thumbnail na edição:", e?.message || e);
+        }
+      });
+    }
+
     return res.status(200).json({ success: true, data: termo });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
