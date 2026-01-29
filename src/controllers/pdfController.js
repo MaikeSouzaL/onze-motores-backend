@@ -194,6 +194,17 @@ export const updatePDFMetadata = async (req, res) => {
       ...metadata,
     };
 
+    // Espelhar campos importantes no topo para exibição/lista
+    if (typeof metadata.clientName === 'string') {
+      const trimmed = metadata.clientName.trim();
+      if (trimmed) pdf.clientName = trimmed;
+    }
+
+    if (typeof metadata.clientPhone === 'string') {
+      const trimmedPhone = metadata.clientPhone.trim();
+      pdf.clientPhone = trimmedPhone || pdf.clientPhone; // aceita vazio
+    }
+
     await pdf.save();
 
     res.status(200).json({
