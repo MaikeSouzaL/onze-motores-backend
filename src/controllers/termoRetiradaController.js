@@ -282,6 +282,7 @@ export const updateTermoData = async (req, res) => {
       servicoExecutado,
       defeitoEncontrado,
       observacoes,
+      fotos,
     } = req.body || {};
 
     if (!uid) {
@@ -345,6 +346,14 @@ export const updateTermoData = async (req, res) => {
 
     if (typeof observacoes === "string") {
       updates.observacoes = observacoes;
+    }
+
+    // Adicionar fotos se fornecidas (apenas se o termo não tiver fotos ainda)
+    if (Array.isArray(fotos) && fotos.length > 0) {
+      // Só permite adicionar fotos se o termo não tiver fotos ainda
+      if (!termo.fotos || termo.fotos.length === 0) {
+        updates.fotos = fotos.slice(0, 5); // Máx. 5 fotos
+      }
     }
 
     const parseDateField = (value, label) => {
