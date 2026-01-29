@@ -6,6 +6,7 @@ import htmlPdf from 'html-pdf-node';
 import { getMotorHTML } from '../utils/motorPDFHelper.js';
 import { renderEsquemaToSVG } from '../utils/esquemaRenderer.js';
 import { renameDriveFile } from '../services/googleDriveService.js';
+import htmlPdfNode from 'html-pdf-node';
 
 /**
  * @desc    Salvar registro de PDF
@@ -530,5 +531,60 @@ export const generateMotorPDF = async (req, res) => {
       message: 'Erro ao gerar PDF do motor',
       error: error.message,
     });
+  }
+};
+
+/**
+ * @desc    Renderiza HTML em PDF (retorna base64)
+ * @route   POST /api/pdfs/render-html
+ */
+export const renderHTMLToPDF = async (req, res) => {
+  try {
+    const { html, options } = req.body || {};
+    if (!html || typeof html !== 'string') {
+      return res.status(400).json({ success: false, message: 'HTML é obrigatório' });
+    }
+
+    const doc = { content: html };
+    const pdfOptions = Object.assign({ format: 'A4' }, options || {});
+    const buffer = await htmlPdfNode.generatePdf(doc, pdfOptions);
+    const base64 = Buffer.from(buffer).toString('base64');
+
+    return res.status(200).json({ success: true, pdfBase64: base64 });
+  } catch (error) {
+    console.error('[PDF] Erro ao renderizar HTML:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * @desc    Atualiza dados do arquivo PDF (URL/driveFileId/fileName)
+ * @route   PATCH /api/pdfs/:id/file
+ */
+export const updatePDFFileData = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { uid, fileUrl, driveFileId, fileName } = req.body || {};
+
+    if (!uid) {
+      return res.status(400).json({ success: false, message: 'UID é obrigatório' });
+    }
+
+    const pdf = await SavedPDF.findById(id);
+    if (!pdf) {
+      return res.status(404).json({ success: false, message: 'PDF não encontrado' });
+    }
+    if (pdf.uid !== uid) {
+      return res.status(403).json({ success: false, message: 'Permissão negada' });
+    }
+
+    if (typeof fileUrl === 'string') pdf.fileUrl = fileUrl;
+    if (typeof driveFileId === 'string') pdf.driveFileId = driveFileId;
+    if (typeof fileName === 'string') pdf.fileName = fileName;
+
+    await pdf.save();
+    return res.status(200).json({ success: true, data: pdf });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
