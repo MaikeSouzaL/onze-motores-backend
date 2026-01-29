@@ -403,10 +403,11 @@ export const updateTermoData = async (req, res) => {
 
     console.log("[TERMO] Termo salvo com updates:", Object.keys(updates));
 
-    // Se fotos foram adicionadas e não há thumbnail ainda, gerar thumbnail em background
-    const shouldGenerateThumb = updates.fotos && updates.fotos.length > 0 && !termo.thumbUrl && !termo.thumbDriveFileId;
+    // Se o termo tem fotos mas não tem thumbnail, gerar thumbnail em background
+    const termoFotos = termo.fotos || [];
+    const shouldGenerateThumb = termoFotos.length > 0 && !termo.thumbUrl && !termo.thumbDriveFileId;
     console.log("[TERMO] Verificando geração de thumbnail:", {
-      hasFotos: updates.fotos && updates.fotos.length > 0,
+      termoTemFotos: termoFotos.length,
       hasThumbUrl: !!termo.thumbUrl,
       hasThumbDriveId: !!termo.thumbDriveFileId,
       willGenerate: shouldGenerateThumb,
@@ -415,7 +416,7 @@ export const updateTermoData = async (req, res) => {
     if (shouldGenerateThumb) {
       setImmediate(async () => {
         try {
-          const firstPhoto = updates.fotos[0];
+          const firstPhoto = termoFotos[0];
           
           console.log("[TERMO] Iniciando processamento de thumbnail...", {
             id: termo._id,
