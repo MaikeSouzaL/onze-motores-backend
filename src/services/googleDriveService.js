@@ -117,3 +117,13 @@ export async function deleteDriveFile(fileId) {
   const drive = getDriveClient();
   await drive.files.delete({ fileId });
 }
+
+export async function renameDriveFile(fileId, newName) {
+  if (!fileId || !newName) return;
+  const drive = getDriveClient();
+  await drive.files.update({
+    fileId,
+    requestBody: { name: newName },
+    fields: 'id, name'
+  });
+}

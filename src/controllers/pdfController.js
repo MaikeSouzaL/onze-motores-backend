@@ -5,6 +5,7 @@ import axios from 'axios';
 import htmlPdf from 'html-pdf-node';
 import { getMotorHTML } from '../utils/motorPDFHelper.js';
 import { renderEsquemaToSVG } from '../utils/esquemaRenderer.js';
+import { renameDriveFile } from '../services/googleDriveService.js';
 
 /**
  * @desc    Salvar registro de PDF
@@ -171,7 +172,6 @@ export const updatePDFMetadata = async (req, res) => {
     if (!metadata) {
       return res.status(400).json({ success: false, message: 'Metadata é obrigatório' });
     }
-
     if (!uid) {
       return res.status(400).json({ success: false, message: 'UID é obrigatório' });
     }
@@ -214,6 +214,49 @@ export const updatePDFMetadata = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * @desc    Renomear arquivo PDF no Drive e atualizar fileName no Mongo
+ * @route   PATCH /api/pdfs/:id/rename?uid=...
+ */
+export const renamePDFFile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { uid, fileName } = req.body || {};
+
+    if (!uid) {
+      return res.status(400).json({ success: false, message: 'UID é obrigatório' });
+    }
+    if (!fileName || typeof fileName !== 'string') {
+      return res.status(400).json({ success: false, message: 'fileName é obrigatório' });
+    }
+
+    const pdf = await SavedPDF.findById(id);
+    if (!pdf) {
+      return res.status(404).json({ success: false, message: 'PDF não encontrado' });
+    }
+    if (pdf.uid !== uid) {
+      return res.status(403).json({ success: false, message: 'Permissão negada' });
+    }
+
+    // Renomear no Google Drive se houver driveFileId
+    try {
+      if (pdf.driveFileId) {
+        await renameDriveFile(pdf.driveFileId, fileName);
+      }
+    } catch (driveError) {
+      console.warn('[PDF] Erro ao renomear arquivo no Drive:', driveError.message);
+      // Continua mesmo se falhar no Drive; ainda atualiza no banco
+    }
+
+    pdf.fileName = fileName;
+    await pdf.save();
+
+    return res.status(200).json({ success: true, data: pdf });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
