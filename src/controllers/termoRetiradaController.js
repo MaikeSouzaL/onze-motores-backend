@@ -349,10 +349,19 @@ export const updateTermoData = async (req, res) => {
     }
 
     // Adicionar fotos se fornecidas (apenas se o termo não tiver fotos ainda)
+    console.log("[TERMO] Verificando fotos recebidas...", {
+      fotosRecebidas: Array.isArray(fotos) ? fotos.length : 0,
+      fotosExistentes: Array.isArray(termo.fotos) ? termo.fotos.length : 0,
+      termoId: termo._id,
+    });
+
     if (Array.isArray(fotos) && fotos.length > 0) {
       // Só permite adicionar fotos se o termo não tiver fotos ainda
       if (!termo.fotos || termo.fotos.length === 0) {
         updates.fotos = fotos.slice(0, 5); // Máx. 5 fotos
+        console.log("[TERMO] ✅ Fotos serão adicionadas ao termo:", updates.fotos.length);
+      } else {
+        console.log("[TERMO] ⚠️ Termo já possui fotos, não adicionando novas");
       }
     }
 
@@ -392,18 +401,31 @@ export const updateTermoData = async (req, res) => {
     Object.assign(termo, updates);
     await termo.save();
 
+    console.log("[TERMO] Termo salvo com updates:", Object.keys(updates));
+
     // Se fotos foram adicionadas e não há thumbnail ainda, gerar thumbnail em background
-    if (updates.fotos && updates.fotos.length > 0 && !termo.thumbUrl && !termo.thumbDriveFileId) {
+    const shouldGenerateThumb = updates.fotos && updates.fotos.length > 0 && !termo.thumbUrl && !termo.thumbDriveFileId;
+    console.log("[TERMO] Verificando geração de thumbnail:", {
+      hasFotos: updates.fotos && updates.fotos.length > 0,
+      hasThumbUrl: !!termo.thumbUrl,
+      hasThumbDriveId: !!termo.thumbDriveFileId,
+      willGenerate: shouldGenerateThumb,
+    });
+
+    if (shouldGenerateThumb) {
       setImmediate(async () => {
         try {
           const firstPhoto = updates.fotos[0];
           
+          console.log("[TERMO] Iniciando processamento de thumbnail...", {
+            id: termo._id,
+            uid: termo.uid,
+            photoType: typeof firstPhoto,
+            isBase64: typeof firstPhoto === "string" && firstPhoto.startsWith("data:image"),
+          });
+          
           if (typeof firstPhoto === "string" && firstPhoto.startsWith("data:image")) {
-            console.log("[TERMO] Processando thumbnail para termo editado...", {
-              id: termo._id,
-              uid: termo.uid,
-              thumbSize: Math.round(firstPhoto.length / 1024) + "KB",
-            });
+            console.log("[TERMO] ✅ Foto é base64 válida, tamanho:", Math.round(firstPhoto.length / 1024) + "KB");
             
             const match = firstPhoto.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/);
             if (match && match[2]) {
@@ -415,11 +437,15 @@ export const updateTermoData = async (req, res) => {
               const timestamp = Date.now();
               const fileName = `thumb_termo_${safeClient}_${timestamp}.jpg`;
 
+              console.log("[TERMO] Fazendo upload da thumbnail...", { fileName, mimeType });
+
               const uploaded = await uploadImageBase64AsPublicFile({
                 base64Data,
                 fileName,
                 mimeType,
               });
+
+              console.log("[TERMO] Upload concluído:", { url: uploaded.url, fileId: uploaded.fileId });
 
               await TermoRetirada.updateOne(
                 { _id: termo._id },
@@ -435,7 +461,11 @@ export const updateTermoData = async (req, res) => {
                 id: termo._id,
                 url: uploaded.url,
               });
+            } else {
+              console.warn("[TERMO] ⚠️ Foto base64 não tem formato válido (regex não matchou)");
             }
+          } else {
+            console.warn("[TERMO] ⚠️ Primeira foto não é string base64 válida");
           }
         } catch (e) {
           console.warn("[TERMO] ⚠️ Erro ao gerar thumbnail na edição:", e?.message || e);
