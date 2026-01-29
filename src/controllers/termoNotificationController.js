@@ -14,16 +14,14 @@ export const getTermosNotifications = async (req, res) => {
       return res.status(400).json({ success: false, message: "UID obrigatório" });
     }
 
-    const { isAdmin } = await getUserPermissions(uid);
     const now = new Date();
 
     // Data limite: 5 dias a partir de agora
     const warningLimit = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
 
     // Buscar termos pendentes (não retirados) que estão vencidos ou próximos a vencer
-    const termosQuery = isAdmin
-      ? { retirado: false }
-      : { uid, retirado: false };
+    // SEMPRE filtra por uid - cada usuário vê apenas seus próprios termos
+    const termosQuery = { uid, retirado: false };
 
     const termos = await TermoRetirada.find({
       ...termosQuery,
