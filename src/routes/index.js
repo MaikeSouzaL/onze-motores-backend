@@ -26,6 +26,7 @@ import userRoutes from "./userRoutes.js";
 import satelliteRoutes from "./satelliteRoutes.js";
 import savedSchemaRoutes from "./savedSchemaRoutes.js";
 import funcionarioRoutes from "./funcionarioRoutes.js";
+import clientRoutes from "./clientRoutes.js";
 import exportRoutes from "./exportRoutes.js";
 
 // Importar rotas de backup (CommonJS)
@@ -93,6 +94,9 @@ router.use("/saved-schemas", savedSchemaRoutes);
 // Rotas de Funcionários
 router.use("/funcionarios", funcionarioRoutes);
 
+// Rotas de Clientes
+router.use("/clients", clientRoutes);
+
 // Rotas de Exportação
 router.use("/export", exportRoutes);
 
@@ -114,5 +118,8 @@ console.log(
 );
 console.log("  - POST /api/notifications/register-token");
 console.log("  - POST /api/notifications/send-test");
+console.log("  - ALL  /api/clients");
+console.log("  - ALL  /api/funcionarios");
+console.log("  - ALL  /api/termos");
 
 export default router;
