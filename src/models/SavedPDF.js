@@ -18,15 +18,8 @@ const savedPDFSchema = new mongoose.Schema(
     driveFileId: { type: String }, // ID do arquivo no Google Drive (para deleção)
 
     metadata: {
-      equipamento: String,
-      defeito: String,
-      valor: String,
-      prazoRetirada: String,
-      termoRetiradaId: String, // ID do termo de retirada associado
-      clientPhone: String,
-      observacoes: String,
-      retirado: Boolean, // Flag para indicar se já foi retirado
-      // Outros campos flexíveis
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
   },
   {
