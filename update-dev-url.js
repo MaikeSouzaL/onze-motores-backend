@@ -12,7 +12,7 @@ const updateDevUrl = async () => {
       { key: 'settings' },
       { 
         $set: { 
-          'api.development.url': '192.168.1.10',
+          'api.development.url': '192.168.1.4',
           'api.development.port': 4882
         } 
       }

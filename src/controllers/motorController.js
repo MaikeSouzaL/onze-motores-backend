@@ -100,7 +100,8 @@ export const getMotors = async (req, res) => {
     if (voltagem) query.voltagem = { $regex: voltagem, $options: "i" };
 
     // Excluir campos pesados da listagem para evitar erro de rede (payload muito grande)
-    const fieldsToSelect = "-esquemaLigacao -fotosMotorUrls -servicoImagem";
+    // Mantemos fotosMotorUrls pois cada motor tem poucas fotos e são apenas URLs curtas
+    const fieldsToSelect = "-esquemaLigacao -servicoImagem";
 
     let motors;
     if (isAdmin) {
